@@ -56,50 +56,17 @@ jobs:
             HASH=$(openssl md5 "${{ steps.package.outputs.zipfile }}" | tr -d ' ')
           fi
           echo "md5=$HASH" >> $GITHUB_OUTPUT
-          echo "zipname=$(basename ${{ steps.package.outputs.zipfile }})" >> $GITHUB_OUTPUT
-
-      - name: Update manifest.json
-        run: |
-          VERSION="${{ steps.package.outputs.version }}"
-          MD5="${{ steps.md5.outputs.md5 }}"
-          DOWNLOAD_URL="https://github.com/${{ github.repository_owner }}/${{ github.event.repository.name }}/releases/download/v$VERSION/${{ steps.md5.outputs.zipname }}"
-
-          cat > manifest.json << EOF
-          [
-            {
-              "guid": "f4a2e8c1-9b3d-4f7a-b6c5-2d8e1a3f9b04",
-              "name": "JellyTag Fork",
-              "overview": "JellyTag with VFQ/VFF/VFI French variant flag support",
-              "description": "JellyTag automatically overlays quality badges on media posters and thumbnails. This fork adds support for VFQ (Canadian French), VFF/VFI (French) audio track detection with distinct flags.",
-              "owner": "${{ github.repository_owner }}",
-              "category": "General",
-              "imageUrl": "https://raw.githubusercontent.com/${{ github.repository_owner }}/${{ github.event.repository.name }}/main/Jellytag/Jellyfin.Plugin.JellyTag/JellyTag.png",
-              "versions": [
-                {
-                  "version": "$VERSION",
-                  "changelog": "Add VFQ/VFF/VFI French variant flag detection - VFQ shows Canadian flag (FR-QC), VFF/VFI shows French flag (FR)",
-                  "targetAbi": "10.11.0.0",
-                  "sourceUrl": "$DOWNLOAD_URL",
-                  "checksum": "$MD5",
-                  "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-                }
-              ]
-            }
-          ]
-          EOF
-
-      - name: Upload manifest.json as artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: manifest
-          path: manifest.json
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            ${{ steps.package.outputs.zipfile }}
-            manifest.json
+          files: ${{ steps.package.outputs.zipfile }}
           generate_release_notes: true
+          body: |
+            ## Checksum (MD5)
+            `${{ steps.md5.outputs.md5 }}`
+
+            ## Installation
+            Add repository URL: `https://raw.githubusercontent.com/StunBeta/jellyfin-jellyTag/main/manifest.json`
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
