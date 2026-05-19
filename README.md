@@ -1,76 +1,38 @@
-*Status: Active development is temporarily paused while I deepen my understanding of the codebase. The project is not abandoned.
-see [#17](https://github.com/Atilil/jellyfin-plugins/issues/17) for the full context.*
+# JellyTag Fork
 
-# Jellyfin Plugins by Atilili
+Fork de JellyTag avec support supplémentaire pour les variants francophones canadiens.
 
-A collection of plugins for Jellyfin media server.
+## Installation depuis ce dépôt
 
-## Installation
+1. Ouvrir Jellyfin et aller dans **Administration → Dashboard → Plugins → Repositories**
+2. Cliquer sur **Ajouter** et entrer:
+   - **Nom:** `JellyTag Fork`
+   - **URL:** `https://raw.githubusercontent.com/StunBeta/jellyfin-jellyTag/main/manifest.json`
+3. Cliquer sur **Sauvegarder**
+4. Aller dans l'onglet **Catalog** et installer JellyTag Fork
+5. Redémarrer Jellyfin
 
-1. Open Jellyfin and go to **Administration → Dashboard → Plugins → Repositories**
-2. Click **Add** and enter:
-   - **Name:** `Atilili Plugins`
-   - **URL:** `https://raw.githubusercontent.com/Atilil/jellyfin-plugins/main/manifest.json`
-3. Click **Save**
-4. Go to **Catalog** tab and install the plugins you want
-5. Restart Jellyfin
+## Fonctionnalités ajoutées
 
-## Available Plugins
+- **VFQ (Français Québécois):** Affiche le drapeau canadien 🇨🇦 avec le badge "FR-QC"
+- **VFF/VFI/VFR (Français):** Affiche le drapeau français 🇫🇷 avec le badge "FR"
+- Quand les deux tracks français (standard + VFQ) sont présentes, les deux drapeaux sont affichés
 
-### WatchSync
+## Fonctionnalités originales
 
-<p align="center">
-    <img src="WatchSync/Jellyfin.Plugin.WatchSync/WatchSync.png" />
-</p>
-
-Automatically synchronizes watch history between libraries of different qualities (4K/HD). When a movie is watched in 4K, the HD version is also marked as watched (and vice versa).
-
-**Features:**
-- Automatic sync on playback stop
-- Smart matching via IMDB, TMDB, TVDB
-- Support for movies and TV series
-- Configurable completion threshold
-- Library and user exclusion
-- Full sync scheduled task
-
-[More details](WatchSync/README.md)
-
----
-
-### JellyTag
-
-<p align="center">
-    <img src="Jellytag/Jellyfin.Plugin.JellyTag/JellyTag.png" />
-</p>
-
-Automatically adds quality resolution badges (4K, 1080p, 720p, SD) to your media posters and thumbnails. Badges are applied server-side via HTTP middleware, visible on all Jellyfin clients without configuration.
-
-**Features:**
 - Automatic quality detection from video metadata
-- Configurable badge position, size, and margin per image type
-- Support for posters, thumbnails, and backdrops
-- File-based image caching for performance
-- Works on all clients (web, mobile, TV, Kodi)
+- Badge de résolution (4K, 1080p, 720p, SD)
+- Badge HDR (DV, HDR10, HDR10+, HLG)
+- Badge codec vidéo (H.264, HEVC, AV1, VP9)
+- Badge audio (Atmos, TrueHD, DTS:X, etc.)
+- Drapeaux de langue
+- Indicateur VOST
+- Configuration par panneau (poster, thumbnail, backdrop)
+- Support SVG et texte
+- Preview temps réel
+- Cache d'images
 
-[More details](Jellytag/README.md)
+## Configuration requise
 
----
-
-### Requirements
-
-- Jellyfin 10.11.0 or higher
-- .NET 9 SDK (for building)
-
-## License
-
-MIT License - see [LICENSE](LICENSE) file.
-
-## Author
-
-**Atilili**
-
----
-
-## Disclaimer
-
-This project was developed with the assistance of AI (Claude by Anthropic). The code has been reviewed, tested, and validated before publication.
+- Jellyfin 10.11.0 ou supérieur
+- .NET 9 SDK (pour construire)

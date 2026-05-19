@@ -319,6 +319,7 @@ public class QualityDetectionService : IQualityDetectionService
         {
             var lang = stream.Language;
             var displayTitle = stream.DisplayTitle?.ToUpperInvariant() ?? "";
+<<<<<<< Updated upstream
             
             string? frenchVariant = null;
             if (displayTitle.Contains("VFQ"))
@@ -327,6 +328,21 @@ public class QualityDetectionService : IQualityDetectionService
                 frenchVariant = "vff";
             
             if (!string.IsNullOrEmpty(lang) && addedLanguages.Add(lang))
+=======
+
+            // Detect French variants from DisplayTitle
+            string? variant = null;
+            if (displayTitle.Contains("VFQ"))
+                variant = "vq";
+            else if (displayTitle.Contains("VFF") || displayTitle.Contains("VFR") || displayTitle.Contains("VFI"))
+                variant = "vff";
+
+            // Check if it's a French variant track
+            bool isFrenchVariant = variant != null && (langLower == "fre" || langLower == "fra" || langLower == "fr");
+
+            // Always add the base language
+            if (addedLanguages.Add(langLower))
+>>>>>>> Stashed changes
             {
                 var langLower = lang.ToLowerInvariant();
                 
@@ -340,6 +356,20 @@ public class QualityDetectionService : IQualityDetectionService
                     Category = BadgeCategory.Language,
                     BadgeKey = langLower,
                     ResourceFileName = GetFlagResourceFileName(langLower)
+<<<<<<< Updated upstream
+=======
+                });
+            }
+
+            // If it's a French variant, also add the variant badge separately
+            if (isFrenchVariant && addedLanguages.Add(variant))
+            {
+                badges.Add(new BadgeInfo
+                {
+                    Category = BadgeCategory.Language,
+                    BadgeKey = variant,
+                    ResourceFileName = GetFlagResourceFileName(variant)
+>>>>>>> Stashed changes
                 });
             }
         }
