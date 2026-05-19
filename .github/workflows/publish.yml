@@ -97,7 +97,9 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: ${{ steps.package.outputs.zipfile }}
+          files: |
+            ${{ steps.package.outputs.zipfile }}
+            manifest.json
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
