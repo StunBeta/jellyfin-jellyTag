@@ -57,14 +57,12 @@ jobs:
           fi
           echo "md5=$HASH" >> $GITHUB_OUTPUT
           echo "zipname=$(basename ${{ steps.package.outputs.zipfile }})" >> $GITHUB_OUTPUT
-          echo "downloadUrl=https://github.com/${{ github.repository_owner }}/${{ github.event.repository.name }}/releases/download/v${{ steps.package.outputs.version }}/$(basename ${{ steps.package.outputs.zipfile }})" >> $GITHUB_OUTPUT
 
-      - name: Update manifest.json at root
+      - name: Update manifest.json
         run: |
           VERSION="${{ steps.package.outputs.version }}"
           MD5="${{ steps.md5.outputs.md5 }}"
-          ZIPNAME="${{ steps.md5.outputs.zipname }}"
-          DOWNLOAD_URL="${{ steps.md5.outputs.downloadUrl }}"
+          DOWNLOAD_URL="https://github.com/${{ github.repository_owner }}/${{ github.event.repository.name }}/releases/download/v$VERSION/${{ steps.md5.outputs.zipname }}"
 
           cat > manifest.json << EOF
           [
@@ -90,13 +88,11 @@ jobs:
           ]
           EOF
 
-      - name: Commit manifest updates
-        uses: stefanzweifel/git-auto-commit-action@v5
+      - name: Upload manifest.json as artifact
+        uses: actions/upload-artifact@v4
         with:
-          commit_message: "chore: update manifest.json with version ${{ steps.package.outputs.version }} and checksum"
-          file_pattern: "manifest.json"
-          commit_user_name: GitHub Actions
-          commit_user_email: actions@github.com
+          name: manifest
+          path: manifest.json
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
