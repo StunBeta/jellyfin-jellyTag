@@ -312,23 +312,16 @@ public class QualityDetectionService : IQualityDetectionService
         var audioStreams = allStreams.Where(s => s.Type == MediaStreamType.Audio).ToList();
         if (audioStreams.Count == 0) return badges;
 
-        var addedLanguages = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+var addedLanguages = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         // Detect all audio languages
         foreach (var stream in audioStreams)
         {
             var lang = stream.Language;
+            if (lang == null) continue;
+
+            var langLower = lang.ToLowerInvariant();
             var displayTitle = stream.DisplayTitle?.ToUpperInvariant() ?? "";
-<<<<<<< Updated upstream
-            
-            string? frenchVariant = null;
-            if (displayTitle.Contains("VFQ"))
-                frenchVariant = "vq";
-            else if (displayTitle.Contains("VFF") || displayTitle.Contains("VFR"))
-                frenchVariant = "vff";
-            
-            if (!string.IsNullOrEmpty(lang) && addedLanguages.Add(lang))
-=======
 
             // Detect French variants from DisplayTitle
             string? variant = null;
@@ -342,22 +335,12 @@ public class QualityDetectionService : IQualityDetectionService
 
             // Always add the base language
             if (addedLanguages.Add(langLower))
->>>>>>> Stashed changes
             {
-                var langLower = lang.ToLowerInvariant();
-                
-                if (frenchVariant != null && (langLower == "fre" || langLower == "fra" || langLower == "fr"))
-                {
-                    langLower = frenchVariant;
-                }
-                
                 badges.Add(new BadgeInfo
                 {
                     Category = BadgeCategory.Language,
                     BadgeKey = langLower,
                     ResourceFileName = GetFlagResourceFileName(langLower)
-<<<<<<< Updated upstream
-=======
                 });
             }
 
@@ -369,10 +352,9 @@ public class QualityDetectionService : IQualityDetectionService
                     Category = BadgeCategory.Language,
                     BadgeKey = variant,
                     ResourceFileName = GetFlagResourceFileName(variant)
->>>>>>> Stashed changes
                 });
             }
-        }
+}
 
         // VOST indicators - always detect, filtering happens in ShouldShowBadge
         var audioLanguages = new HashSet<string>(
