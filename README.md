@@ -1,38 +1,42 @@
 # JellyTag Fork
 
-Fork de JellyTag avec support supplémentaire pour les variants francophones canadiens.
+Fork of JellyTag with additional support for Canadian French (VFQ) audio track variant detection.
 
-## Installation depuis ce dépôt
+## Installation from this repository
 
-1. Ouvrir Jellyfin et aller dans **Administration → Dashboard → Plugins → Repositories**
-2. Cliquer sur **Ajouter** et entrer:
-   - **Nom:** `JellyTag Fork`
+1. Open Jellyfin and go to **Administration → Dashboard → Plugins → Repositories**
+2. Click **Add** and enter:
+   - **Name:** `JellyTag Fork`
    - **URL:** `https://raw.githubusercontent.com/StunBeta/jellyfin-jellyTag/main/manifest.json`
-3. Cliquer sur **Sauvegarder**
-4. Aller dans l'onglet **Catalog** et installer JellyTag Fork
-5. Redémarrer Jellyfin
+3. Click **Save**
+4. Go to **Catalog** tab and install JellyTag Fork
+5. Restart Jellyfin
 
-## Fonctionnalités ajoutées
+## Features Added
 
-- **VFQ (Français Québécois):** Affiche le drapeau canadien 🇨🇦 avec le badge "FR-QC"
-- **VFF/VFI/VFR (Français):** Affiche le drapeau français 🇫🇷 avec le badge "FR"
-- Quand les deux tracks français (standard + VFQ) sont présentes, les deux drapeaux sont affichés
+- **VFQ (Canadian French):** Shows Canadian flag 🇨🇦 with badge "FR-QC"
+- **VFF/VFI/VFR (French):** Shows French flag 🇫🇷 with badge "FR"
+- When both French tracks (standard + VFQ) are present, both flags are displayed
 
-## Fonctionnalités originales
+## Original Features
 
 - Automatic quality detection from video metadata
-- Badge de résolution (4K, 1080p, 720p, SD)
-- Badge HDR (DV, HDR10, HDR10+, HLG)
-- Badge codec vidéo (H.264, HEVC, AV1, VP9)
-- Badge audio (Atmos, TrueHD, DTS:X, etc.)
-- Drapeaux de langue
-- Indicateur VOST
-- Configuration par panneau (poster, thumbnail, backdrop)
-- Support SVG et texte
-- Preview temps réel
-- Cache d'images
+- Resolution badges (4K, 1080p, 720p, SD)
+- HDR badges (DV, HDR10, HDR10+, HLG)
+- Video codec badges (H.264, HEVC, AV1, VP9)
+- Audio badges (Atmos, TrueHD, DTS:X, etc.)
+- Language flags
+- VOST indicator
+- Per-panel configuration (poster, thumbnail, backdrop)
+- SVG and text badge styles
+- Real-time preview
+- Image caching
 
-## Configuration requise
+## Requirements
 
-- Jellyfin 10.11.0 ou supérieur
-- .NET 9 SDK (pour construire)
+- Jellyfin 10.11.0 or higher
+- .NET 9 SDK (for building)
+
+## License
+
+MIT License
