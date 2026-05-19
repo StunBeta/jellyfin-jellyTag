@@ -1,0 +1,107 @@
+name: Build & Publish JellyTag Plugin
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install zip
+        run: sudo apt-get update && sudo apt-get install -y zip
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.0.x"
+
+      - name: Restore
+        run: dotnet restore Jellytag/Jellyfin.Plugin.JellyTag/Jellyfin.Plugin.JellyTag.csproj
+
+      - name: Build
+        run: dotnet build Jellytag/Jellyfin.Plugin.JellyTag/Jellyfin.Plugin.JellyTag.csproj -c Release
+
+      - name: Create dist directory
+        run: mkdir -p dist
+
+      - name: Package plugin
+        id: package
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          PLUGIN_NAME="JellyTag"
+          OUTDIR="Jellytag/Jellyfin.Plugin.JellyTag/bin/Release/net9.0"
+          ZIPFILE="dist/${PLUGIN_NAME}_${VERSION}.zip"
+          
+          zip -j "$ZIPFILE" "${OUTDIR}"/*
+          
+          echo "zipfile=$ZIPFILE" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Compute MD5
+        id: md5
+        run: |
+          if command -v md5sum &> /dev/null; then
+            HASH=$(md5sum "${{ steps.package.outputs.zipfile }}" | cut -d ' ' -f1)
+          else
+            HASH=$(openssl md5 "${{ steps.package.outputs.zipfile }}" | tr -d ' ')
+          fi
+          echo "md5=$HASH" >> $GITHUB_OUTPUT
+          echo "zipname=$(basename ${{ steps.package.outputs.zipfile }})" >> $GITHUB_OUTPUT
+          echo "downloadUrl=https://github.com/${{ github.repository_owner }}/${{ github.event.repository.name }}/releases/download/v${{ steps.package.outputs.version }}/$(basename ${{ steps.package.outputs.zipfile }})" >> $GITHUB_OUTPUT
+
+      - name: Update manifest.json at root
+        run: |
+          VERSION="${{ steps.package.outputs.version }}"
+          MD5="${{ steps.md5.outputs.md5 }}"
+          ZIPNAME="${{ steps.md5.outputs.zipname }}"
+          DOWNLOAD_URL="${{ steps.md5.outputs.downloadUrl }}"
+
+          cat > manifest.json << EOF
+          [
+            {
+              "guid": "f4a2e8c1-9b3d-4f7a-b6c5-2d8e1a3f9b04",
+              "name": "JellyTag Fork",
+              "overview": "JellyTag with VFQ/VFF/VFI French variant flag support",
+              "description": "JellyTag automatically overlays quality badges on media posters and thumbnails. This fork adds support for VFQ (Canadian French), VFF/VFI (French) audio track detection with distinct flags.",
+              "owner": "${{ github.repository_owner }}",
+              "category": "General",
+              "imageUrl": "https://raw.githubusercontent.com/${{ github.repository_owner }}/${{ github.event.repository.name }}/main/Jellytag/Jellyfin.Plugin.JellyTag/JellyTag.png",
+              "versions": [
+                {
+                  "version": "$VERSION",
+                  "changelog": "Add VFQ/VFF/VFI French variant flag detection - VFQ shows Canadian flag (FR-QC), VFF/VFI shows French flag (FR)",
+                  "targetAbi": "10.11.0.0",
+                  "sourceUrl": "$DOWNLOAD_URL",
+                  "checksum": "$MD5",
+                  "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+                }
+              ]
+            }
+          ]
+          EOF
+
+      - name: Commit manifest updates
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: update manifest.json with version ${{ steps.package.outputs.version }} and checksum"
+          file_pattern: "manifest.json"
+          commit_user_name: GitHub Actions
+          commit_user_email: actions@github.com
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.package.outputs.zipfile }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
