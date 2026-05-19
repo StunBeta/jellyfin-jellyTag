@@ -1,4 +1,4 @@
-name: Build & Publish JellyTag Plugin
+name: Build & Publish Jellyfin Plugin
 
 on:
   push:
@@ -16,7 +16,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: main
+          ref: master
 
       - name: Install zip
         run: sudo apt-get update && sudo apt-get install -y zip
@@ -49,21 +49,23 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Compute MD5
-        id: md5
+        id: sha256
         run: |
           if command -v md5sum &> /dev/null; then
             HASH=$(md5sum "${{ steps.package.outputs.zipfile }}" | cut -d ' ' -f1)
           else
             HASH=$(openssl md5 "${{ steps.package.outputs.zipfile }}" | tr -d ' ')
           fi
-          echo "md5=$HASH" >> $GITHUB_OUTPUT
+          echo "sha256=$HASH" >> $GITHUB_OUTPUT
           echo "zipname=$(basename ${{ steps.package.outputs.zipfile }})" >> $GITHUB_OUTPUT
+          echo "downloadUrl=https://github.com/${{ github.repository_owner }}/${{ github.event.repository.name }}/releases/download/v${{ steps.package.outputs.version }}/$(basename ${{ steps.package.outputs.zipfile }})" >> $GITHUB_OUTPUT
 
       - name: Update manifest.json at root
         run: |
           VERSION="${{ steps.package.outputs.version }}"
-          MD5="${{ steps.md5.outputs.md5 }}"
-          DOWNLOAD_URL="https://github.com/${{ github.repository_owner }}/${{ github.event.repository.name }}/releases/download/v$VERSION/${{ steps.md5.outputs.zipname }}"
+          SHA256="${{ steps.sha256.outputs.sha256 }}"
+          ZIPNAME="${{ steps.sha256.outputs.zipname }}"
+          DOWNLOAD_URL="${{ steps.sha256.outputs.downloadUrl }}"
 
           cat > manifest.json << EOF
           [
@@ -74,14 +76,13 @@ jobs:
               "description": "JellyTag automatically overlays quality badges on media posters and thumbnails. This fork adds support for VFQ (Canadian French), VFF/VFI (French) audio track detection with distinct flags.",
               "owner": "${{ github.repository_owner }}",
               "category": "General",
-              "imageUrl": "https://raw.githubusercontent.com/${{ github.repository_owner }}/${{ github.event.repository.name }}/main/Jellytag/Jellyfin.Plugin.JellyTag/JellyTag.png",
+              "imageUrl": "https://raw.githubusercontent.com/${{ github.repository_owner }}/${{ github.event.repository.name }}/master/Jellytag/Jellyfin.Plugin.JellyTag/JellyTag.png",
               "versions": [
                 {
                   "version": "$VERSION",
-                  "changelog": "Add VFQ/VFF/VFI French variant flag detection - VFQ shows Canadian flag (FR-QC), VFF/VFI shows French flag (FR)",
                   "targetAbi": "10.11.0.0",
                   "sourceUrl": "$DOWNLOAD_URL",
-                  "checksum": "$MD5",
+                  "checksum": "$SHA256",
                   "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
                 }
               ]
@@ -92,13 +93,13 @@ jobs:
       - name: Commit manifest updates
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "chore: update manifest.json with version ${{ steps.package.outputs.version }} and checksum"
-          file_pattern: "manifest.json"
+          commit_message: "chore: update manifest.json with version and checksum"
+          file_pattern: "*.json"
           commit_user_name: GitHub Actions
           commit_user_email: actions@github.com
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v1
         with:
           files: ${{ steps.package.outputs.zipfile }}
           generate_release_notes: true
