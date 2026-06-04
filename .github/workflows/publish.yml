@@ -41,13 +41,10 @@ jobs:
             -c Release -o publish-output
 
       # ------------------------------------------------------------
-      # 3️⃣  Generate manifest.json **inside publish-output**
+      # 3️⃣  Create manifest.json with placeholders
       # ------------------------------------------------------------
-      - name: Create manifest.json in publish output
-        id: manifest
+      - name: Create manifest.json in publish-output
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          # NOTE: MD5 will be calculated later, placeholder for now
           cat > publish-output/manifest.json <<'EOF'
           [
             {
@@ -60,12 +57,12 @@ jobs:
               "imageUrl": "https://raw.githubusercontent.com/${{ github.repository_owner }}/${{ github.event.repository.name }}/main/Jellytag/Jellyfin.Plugin.JellyTag/JellyTag.png",
               "versions": [
                 {
-                  "version": "${VERSION}",
+                  "version": "PLACEHOLDER_VERSION",
                   "changelog": "Add VFQ/VFF/VFI French variant flag detection - VFQ shows Canadian flag (FR‑QC), VFF/VFI shows French flag (FR)",
                   "targetAbi": "10.11.0.0",
                   "sourceUrl": "PLACEHOLDER_URL",
                   "checksum": "PLACEHOLDER_MD5",
-                  "timestamp": "$(date -u +\"%Y-%m-%dT%H:%M:%SZ\")"
+                  "timestamp": "PLACEHOLDER_TIMESTAMP"
                 }
               ]
             }
@@ -111,15 +108,20 @@ jobs:
       # ------------------------------------------------------------
       # 7️⃣  Update manifest.json with real checksum & download URL
       # ------------------------------------------------------------
-      - name: Fill manifest placeholders
-        run: |
-          VERSION="${{ steps.package.outputs.version }}"
-          DOWNLOAD_URL="https://github.com/${{ github.repository_owner }}/${{ github.event.repository.name }}/releases/download/v${VERSION}/${{ steps.package.outputs.zipname }}"
-          MD5="${{ steps.md5.outputs.md5 }}"
+          # ------------------------------------------------------------
+          # 7️⃣  Fill manifest placeholders (version, URL, MD5, timestamp)
+          # ------------------------------------------------------------
+          - name: Fill manifest placeholders
+            run: |
+              VERSION="${{ steps.package.outputs.version }}"
+              DOWNLOAD_URL="https://github.com/${{ github.repository_owner }}/${{ github.event.repository.name }}/releases/download/v${VERSION}/${{ steps.package.outputs.zipname }}"
+              MD5="${{ steps.md5.outputs.md5 }}"
+              TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
-          # replace the placeholders in the manifest inside publish-output
-          sed -i "s|PLACEHOLDER_URL|${DOWNLOAD_URL}|" publish-output/manifest.json
-          sed -i "s|PLACEHOLDER_MD5|${MD5}|" publish-output/manifest.json
+              sed -i "s|PLACEHOLDER_VERSION|${VERSION}|" publish-output/manifest.json
+              sed -i "s|PLACEHOLDER_URL|${DOWNLOAD_URL}|" publish-output/manifest.json
+              sed -i "s|PLACEHOLDER_MD5|${MD5}|" publish-output/manifest.json
+              sed -i "s|PLACEHOLDER_TIMESTAMP|${TIMESTAMP}|" publish-output/manifest.json
 
       # ------------------------------------------------------------
       # 8️⃣  Copy manifest to repo root (for source‑control)
