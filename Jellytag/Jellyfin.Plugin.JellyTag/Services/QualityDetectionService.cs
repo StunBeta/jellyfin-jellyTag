@@ -312,7 +312,7 @@ public class QualityDetectionService : IQualityDetectionService
         var audioStreams = allStreams.Where(s => s.Type == MediaStreamType.Audio).ToList();
         if (audioStreams.Count == 0) return badges;
 
-var addedLanguages = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var addedFlagKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         // Detect all audio languages
         foreach (var stream in audioStreams)
@@ -330,36 +330,41 @@ var addedLanguages = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             else if (displayTitle.Contains("VFF") || displayTitle.Contains("VFR") || displayTitle.Contains("VFI"))
                 variant = "vff";
 
-            // Check if it's a French variant track
-            bool isFrenchVariant = variant != null && (langLower == "fre" || langLower == "fra" || langLower == "fr");
+            // Determine normalized flag key for the base language
+            var baseKey = LangCodeToFlag.TryGetValue(langLower, out var mapped) ? mapped : langLower;
 
-            // Always add the base language
-            if (addedLanguages.Add(langLower))
+            // Add base language flag if not already added
+            if (addedFlagKeys.Add(baseKey))
             {
                 badges.Add(new BadgeInfo
                 {
                     Category = BadgeCategory.Language,
-                    BadgeKey = langLower,
+                    BadgeKey = baseKey,
                     ResourceFileName = GetFlagResourceFileName(langLower)
                 });
             }
 
-            // If it's a French variant, also add the variant badge separately
-            if (isFrenchVariant && addedLanguages.Add(variant))
+            // If it's a French variant, also add the variant badge separately (only if its flag differs)
+            if (variant != null && (langLower == "fre" || langLower == "fra" || langLower == "fr"))
             {
-                badges.Add(new BadgeInfo
+                var variantFlagKey = FrenchVariantFlags.TryGetValue(variant, out var vMapped) ? vMapped : variant;
+                if (addedFlagKeys.Add(variantFlagKey))
                 {
-                    Category = BadgeCategory.Language,
-                    BadgeKey = variant,
-                    ResourceFileName = GetFlagResourceFileName(variant)
-                });
+                    badges.Add(new BadgeInfo
+                    {
+                        Category = BadgeCategory.Language,
+                        BadgeKey = variant,
+                        ResourceFileName = GetFlagResourceFileName(variant)
+                    });
+                }
             }
-}
+        }
 
         // VOST indicators - always detect, filtering happens in ShouldShowBadge
         var audioLanguages = new HashSet<string>(
             audioStreams.Where(s => !string.IsNullOrEmpty(s.Language)).Select(s => s.Language!.ToLowerInvariant()),
             StringComparer.OrdinalIgnoreCase);
+        var addedSubtitleKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         var subtitleStreams = allStreams.Where(s => s.Type == MediaStreamType.Subtitle).ToList();
         foreach (var sub in subtitleStreams)
@@ -368,7 +373,7 @@ var addedLanguages = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             if (!string.IsNullOrEmpty(subLang) && !audioLanguages.Contains(subLang))
             {
                 var key = "vost" + subLang;
-                if (addedLanguages.Add(key))
+                if (addedSubtitleKeys.Add(key))
                 {
                     badges.Add(new BadgeInfo
                     {
