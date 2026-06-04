@@ -9,16 +9,13 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: write   # needed for the auto-commit step
+      contents: write
 
     steps:
-      # ------------------------------------------------------------
-      # 1️⃣  Checkout + tooling
-      # ------------------------------------------------------------
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0          # we need tags
+          fetch-depth: 0
           ref: main
 
       - name: Install zip
@@ -29,23 +26,45 @@ jobs:
         with:
           dotnet-version: "9.0.x"
 
-      # ------------------------------------------------------------
-      # 2️⃣  Build / Publish
-      # ------------------------------------------------------------
       - name: Restore
         run: dotnet restore Jellytag/Jellyfin.Plugin.JellyTag/Jellyfin.Plugin.JellyTag.csproj
 
-      - name: Build & Publish
-        run: |
-          dotnet publish Jellytag/Jellyfin.Plugin.JellyTag/Jellyfin.Plugin.JellyTag.csproj \
-            -c Release -o publish-output
+      - name: Build
+        run: dotnet publish Jellytag/Jellyfin.Plugin.JellyTag/Jellyfin.Plugin.JellyTag.csproj -c Release -o publish-output
 
-      # ------------------------------------------------------------
-      # 3️⃣  Create manifest.json with placeholders
-      # ------------------------------------------------------------
-      - name: Create manifest.json in publish-output
+      - name: Create dist directory
+        run: mkdir -p dist
+
+      - name: Package plugin
+        id: package
         run: |
-          cat > publish-output/manifest.json <<'EOF'
+          VERSION="${GITHUB_REF_NAME#v}"
+          PLUGIN_NAME="JellyTag"
+          ZIPFILE="dist/${PLUGIN_NAME}_${VERSION}.zip"
+          
+          zip -j "$ZIPFILE" publish-output/*
+          
+          echo "zipfile=$ZIPFILE" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Compute MD5
+        id: md5
+        run: |
+          if command -v md5sum &> /dev/null; then
+            HASH=$(md5sum "${{ steps.package.outputs.zipfile }}" | cut -d ' ' -f1)
+          else
+            HASH=$(openssl md5 "${{ steps.package.outputs.zipfile }}" | tr -d ' ')
+          fi
+          echo "md5=$HASH" >> $GITHUB_OUTPUT
+          echo "zipname=$(basename ${{ steps.package.outputs.zipfile }})" >> $GITHUB_OUTPUT
+
+      - name: Update manifest.json at root
+        run: |
+          VERSION="${{ steps.package.outputs.version }}"
+          MD5="${{ steps.md5.outputs.md5 }}"
+          DOWNLOAD_URL="https://github.com/${{ github.repository_owner }}/${{ github.event.repository.name }}/releases/download/v$VERSION/${{ steps.md5.outputs.zipname }}"
+
+          cat > manifest.json << EOF
           [
             {
               "guid": "f4a2e8c1-9b3d-4f7a-b6c5-2d8e1a3f9b04",
@@ -57,92 +76,26 @@ jobs:
               "imageUrl": "https://raw.githubusercontent.com/${{ github.repository_owner }}/${{ github.event.repository.name }}/main/Jellytag/Jellyfin.Plugin.JellyTag/JellyTag.png",
               "versions": [
                 {
-                  "version": "PLACEHOLDER_VERSION",
-                  "changelog": "Add VFQ/VFF/VFI French variant flag detection - VFQ shows Canadian flag (FR‑QC), VFF/VFI shows French flag (FR)",
+                  "version": "$VERSION",
+                  "changelog": "Add VFQ/VFF/VFI French variant flag detection - VFQ shows Canadian flag (FR-QC), VFF/VFI shows French flag (FR)",
                   "targetAbi": "10.11.0.0",
-                  "sourceUrl": "PLACEHOLDER_URL",
-                  "checksum": "PLACEHOLDER_MD5",
-                  "timestamp": "PLACEHOLDER_TIMESTAMP"
+                  "sourceUrl": "$DOWNLOAD_URL",
+                  "checksum": "$MD5",
+                  "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
                 }
               ]
             }
           ]
           EOF
 
-      # ------------------------------------------------------------
-      # 4️⃣  Prepare distribution directory
-      # ------------------------------------------------------------
-      - name: Create dist directory
-        run: mkdir -p dist
-
-      # ------------------------------------------------------------
-      # 5️⃣  Package the plugin (including manifest.json)
-      # ------------------------------------------------------------
-      - name: Package plugin
-        id: package
-        run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          PLUGIN_NAME="JellyTag"
-          ZIPFILE="dist/${PLUGIN_NAME}_${VERSION}.zip"
-
-          # zip everything that is inside publish-output (manifest.json is now included)
-          zip -j "$ZIPFILE" publish-output/*
-
-          echo "zipfile=$ZIPFILE" >> $GITHUB_OUTPUT
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "zipname=$(basename $ZIPFILE)" >> $GITHUB_OUTPUT
-
-      # ------------------------------------------------------------
-      # 6️⃣  Compute MD5 (needed for manifest entry)
-      # ------------------------------------------------------------
-      - name: Compute MD5
-        id: md5
-        run: |
-          if command -v md5sum >/dev/null; then
-            HASH=$(md5sum "${{ steps.package.outputs.zipfile }}" | cut -d' ' -f1)
-          else
-            HASH=$(openssl md5 "${{ steps.package.outputs.zipfile }}" | tr -d ' ')
-          fi
-          echo "md5=$HASH" >> $GITHUB_OUTPUT
-
-      # ------------------------------------------------------------
-      # 7️⃣  Update manifest.json with real checksum & download URL
-      # ------------------------------------------------------------
-          # ------------------------------------------------------------
-          # 7️⃣  Fill manifest placeholders (version, URL, MD5, timestamp)
-          # ------------------------------------------------------------
-          - name: Fill manifest placeholders
-            run: |
-              VERSION="${{ steps.package.outputs.version }}"
-              DOWNLOAD_URL="https://github.com/${{ github.repository_owner }}/${{ github.event.repository.name }}/releases/download/v${VERSION}/${{ steps.package.outputs.zipname }}"
-              MD5="${{ steps.md5.outputs.md5 }}"
-              TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-
-              sed -i "s|PLACEHOLDER_VERSION|${VERSION}|" publish-output/manifest.json
-              sed -i "s|PLACEHOLDER_URL|${DOWNLOAD_URL}|" publish-output/manifest.json
-              sed -i "s|PLACEHOLDER_MD5|${MD5}|" publish-output/manifest.json
-              sed -i "s|PLACEHOLDER_TIMESTAMP|${TIMESTAMP}|" publish-output/manifest.json
-
-      # ------------------------------------------------------------
-      # 8️⃣  Copy manifest to repo root (for source‑control)
-      # ------------------------------------------------------------
-      - name: Copy manifest to repository root
-        run: cp publish-output/manifest.json manifest.json
-
-      # ------------------------------------------------------------
-      # 9️⃣  Commit the manifest update (repo‑side)
-      # ------------------------------------------------------------
       - name: Commit manifest updates
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "chore: update manifest.json for v${{ steps.package.outputs.version }}"
+          commit_message: "chore: update manifest.json with version ${{ steps.package.outputs.version }} and checksum"
           file_pattern: "manifest.json"
-          commit_user_name: "GitHub Actions"
-          commit_user_email: "actions@github.com"
+          commit_user_name: GitHub Actions
+          commit_user_email: actions@github.com
 
-      # ------------------------------------------------------------
-      # 🔟  Create GitHub Release (includes the zip)
-      # ------------------------------------------------------------
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
