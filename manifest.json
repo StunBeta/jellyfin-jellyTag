@@ -9,12 +9,12 @@
     "imageUrl": "https://raw.githubusercontent.com/StunBeta/jellyfin-jellyTag/main/Jellytag/Jellyfin.Plugin.JellyTag/JellyTag.png",
     "versions": [
       {
-        "version": "2.0.10",
+        "version": "2.1.0",
         "changelog": "Add VFQ/VFF/VFI French variant flag detection - VFQ shows Canadian flag (FR-QC), VFF/VFI shows French flag (FR)",
         "targetAbi": "10.11.0.0",
-        "sourceUrl": "https://github.com/StunBeta/jellyfin-jellyTag/releases/download/v2.0.10/JellyTag_2.0.10.zip",
-        "checksum": "c99357878fc9f531a4b7faac6f9a73be",
-        "timestamp": "2026-06-04T15:00:00Z"
+        "sourceUrl": "https://github.com/StunBeta/jellyfin-jellyTag/releases/download/v2.1.0/JellyTag_2.1.0.zip",
+        "checksum": "9f3aa07e5b111462eaa0ca567544ffc2",
+        "timestamp": "2026-06-04T15:51:30Z"
       }
     ]
   }
